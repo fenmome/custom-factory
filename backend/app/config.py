@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     STORAGE_PROFILE: str = "LOCAL_PRIMARY"
 
     # CORS
-    CORS_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
+    CORS_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:35173"])
     CORS_ALLOW_CREDENTIALS: bool = True
 
     # 图片生成（可选）

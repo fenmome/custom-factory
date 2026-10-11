@@ -121,10 +121,10 @@ docker compose up -d --build
 docker compose exec backend python -m scripts.seed
 
 # 4. 验证
-curl http://localhost/api/health          # {"code":0,...,"data":{"status":"ok"}}
+curl http://localhost:38080/api/health    # {"code":0,...,"data":{"status":"ok"}}
 ```
 
-打开 <http://localhost> 即可使用（开发编排则是 <http://localhost:5173>）。
+打开 <http://localhost:38080> 即可使用（开发编排则是 <http://localhost:35173>）。
 
 **开发模式**（前端热更新 + 后端 --reload）：
 
@@ -160,7 +160,7 @@ ENVIRONMENT=development
 DATABASE_URL=sqlite:///./data/cf_dev.db   # 无 MySQL 时用 SQLite；有 MySQL 则填 mysql+pymysql://...
 STORAGE_ROOT=./data/images
 PLAN_STORE_ROOT=./data/plans
-CORS_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
+CORS_ORIGINS=["http://localhost:35173","http://127.0.0.1:35173"]
 ```
 
 启动并初始化：
@@ -168,21 +168,21 @@ CORS_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
 ```powershell
 cd backend
 .\.venv\Scripts\python.exe -m scripts.seed    # 建表 + 种子数据（含管理员账号）
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 38000
 ```
 
-- 健康检查：<http://127.0.0.1:8000/api/health>
-- Swagger：<http://127.0.0.1:8000/api/docs>（仅非生产环境开放）
+- 健康检查：<http://127.0.0.1:38000/api/health>
+- Swagger：<http://127.0.0.1:38000/api/docs>（仅非生产环境开放）
 
 ### 2. 前端
 
 ```powershell
 cd frontend
 pnpm install
-pnpm dev            # http://localhost:5173
+pnpm dev            # http://localhost:35173
 ```
 
-Vite 开发服务器会把 `/api` 代理到 `http://127.0.0.1:8000`（可用 `VITE_PROXY_TARGET` 环境变量覆盖），
+Vite 开发服务器会把 `/api` 代理到 `http://127.0.0.1:38000`（可用 `VITE_PROXY_TARGET` 环境变量覆盖），
 因此浏览器侧无跨域问题。
 
 ---
@@ -218,7 +218,7 @@ Vite 开发服务器会把 `/api` 代理到 `http://127.0.0.1:8000`（可用 `VI
 | `RUNNER_TOKEN` | 开发默认值 | Codex Runner 内部接口静态 Token，**生产必须更换** |
 | `STORAGE_ROOT` | `./data/images` | 图片资产存储根目录（强制位于项目根目录内） |
 | `PLAN_STORE_ROOT` | `./data/plans` | 冻结计划（概念包）存储根目录 |
-| `CORS_ORIGINS` | `["http://localhost:5173"]` | 允许的前端来源（JSON 数组或逗号分隔） |
+| `CORS_ORIGINS` | `["http://localhost:35173"]` | 允许的前端来源（JSON 数组或逗号分隔） |
 | `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_MODEL` | 空 | 图片生成 API 路线（可选） |
 | `OCR_ENABLED` | `false` | 本地 OCR 运行时开关 |
 | `TITLE_POOL_VERSION` | `1.3.0` | 标题池版本号 |
@@ -262,7 +262,7 @@ docker compose up -d --build
 docker compose exec backend python -m scripts.seed     # 仅首次
 ```
 
-架构：`web`（nginx 容器：前端静态资源 + `/api` 反代）→ `backend`（uvicorn:8000）→ `mysql` / `redis`。
+架构：`web`（nginx 容器：前端静态资源 + `/api` 反代）→ `backend`（uvicorn:38000）→ `mysql` / `redis`。
 
 - 前端产物在 `frontend/Dockerfile` 的 build 阶段内完成，部署机无需安装 Node。
 - Nginx 配置见 `nginx/conf.d/default.conf`：SPA fallback、`/assets/` 长缓存、
@@ -298,7 +298,7 @@ docker compose exec backend python -m scripts.verify_resources   # 校验业务�
 ### 5. 健康检查与日志
 
 ```bash
-curl http://localhost/api/health
+curl http://localhost:38080/api/health
 docker compose ps
 docker compose logs -f backend
 ```
@@ -358,14 +358,15 @@ Alembic 迁移与全部测试在 SQLite 下均可运行。
 
 **Q3：前端请求全部 404 / 502？**
 检查代理配置：本地开发由 Vite 把 `/api` 代理到后端（`vite.config.ts`，
-默认 `http://127.0.0.1:8000`）；生产由 Nginx 反代（`nginx/conf.d/default.conf`）。
+默认 `http://127.0.0.1:38000`）；生产由 Nginx 反代（`nginx/conf.d/default.conf`）。
 接口基址为 `/api/v1`（`VITE_SERVICE_BASE`）。
 
 **Q4：`pnpm install` 报 engine 不兼容？**
 项目要求 Node ≥ 20.19、pnpm ≥ 9.5（见 `frontend/package.json` 的 engines 字段）。
 
 **Q5：端口被占用？**
-后端 8000、前端 5173、Nginx 80/443、MySQL 3306、Redis 6379。
+后端 38000、前端 35173、Nginx 38080/38443、MySQL 33306、Redis 36379
+（宿主机映射；容器内部分别是 38000 / 5173 / 80,443 / 3306 / 6379）。
 可在 `docker-compose*.yml` 的 ports 段或 uvicorn/vite 启动参数中调整。
 
 **Q6：图片和计划数据存在哪？**

@@ -8,8 +8,8 @@ import { setupVitePlugins } from './build/plugins';
 export default defineConfig(configEnv => {
   const viteEnv = loadEnv(configEnv.mode, process.cwd()) as unknown as ImportMetaEnv;
 
-  // 后端代理目标：容器内通过 VITE_PROXY_TARGET 指向 backend 服务，本地默认 8000 端口
-  const proxyTarget = process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:8000';
+  // 后端代理目标：容器内通过 VITE_PROXY_TARGET 指向 backend 服务，本地默认 38000 端口
+  const proxyTarget = process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:38000';
 
   const buildTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
@@ -40,7 +40,7 @@ export default defineConfig(configEnv => {
     },
     server: {
       host: '0.0.0.0',
-      port: 5173,
+      port: 35173,
       open: false,
       proxy: {
         '/api': {
@@ -57,7 +57,7 @@ export default defineConfig(configEnv => {
       }
     },
     preview: {
-      port: 9725
+      port: 39725
     },
     build: {
       reportCompressedSize: false,
