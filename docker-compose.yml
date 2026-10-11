@@ -1,0 +1,84 @@
+version: "3.8"
+
+services:
+  # 前端构建产物由 nginx 托管，并反代 /api 到后端（见 frontend/Dockerfile runtime 阶段）
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: runtime
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - cf-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=mysql+pymysql://cf_user:${DB_PASSWORD}@mysql:3306/custom_factory?charset=utf8mb4
+      - REDIS_URL=redis://redis:6379/0
+      - STORAGE_ROOT=/app/data/images
+      - PLAN_STORE_ROOT=/app/data/plans
+      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=production
+    volumes:
+      - ./data/images:/app/data/images
+      - ./data/plans:/app/data/plans
+      - ./backend/app/resources:/app/app/resources:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cf-network
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: custom_factory
+      MYSQL_USER: cf_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init.sh
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cf-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cf-network
+    restart: unless-stopped
+
+networks:
+  cf-network:
+    driver: bridge

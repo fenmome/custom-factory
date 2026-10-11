@@ -1,0 +1,11 @@
+{
+  "name": "Custom UV DTF",
+  "profile_id": "uv_dtf_crystal",
+  "sold_entity": "Custom UV DTF transfer / decal",
+  "surface_gate": ["clean", "dry", "smooth", "hard", "non_porous", "external_surface"],
+  "version": "1.0",
+  "source_provenance": [
+    "User-approved Image Factory V1 rules, 2026-10-02",
+    "Legacy uv_dtf_crystal profile and UV DTF eligible surface contract; revised by current user approval"
+  ]
+}

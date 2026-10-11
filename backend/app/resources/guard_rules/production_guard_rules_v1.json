@@ -1,0 +1,21 @@
+{
+  "rule_id": "CF-PRODUCTION-GUARD",
+  "version": "1.0",
+  "startup_skus": 10,
+  "startup_yellow_failures": 2,
+  "startup_red_failures": 3,
+  "sku_window": 50,
+  "sku_yellow_min_percent": 10,
+  "sku_yellow_max_percent": 20,
+  "image_window": 100,
+  "image_yellow_min_percent": 20,
+  "red_consecutive_skus": 5,
+  "red_short_window": 20,
+  "red_short_failures": 6,
+  "red_long_window": 50,
+  "red_long_failures": 10,
+  "yellow_required_role_streak": 2,
+  "red_required_role_streak": 3,
+  "red_exception_streak": 3,
+  "trial_sku_limit": 3
+}

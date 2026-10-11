@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+    environment:
+      # 容器内 vite 代理指向 backend 服务
+      - VITE_PROXY_TARGET=http://backend:8000
+    networks:
+      - cf-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=mysql+pymysql://cf_user:cf_dev_password@mysql:3306/custom_factory?charset=utf8mb4
+      - STORAGE_ROOT=/app/data/images
+      - PLAN_STORE_ROOT=/app/data/plans
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - cf-network
+
+  mysql:
+    environment:
+      MYSQL_ROOT_PASSWORD: cf_dev_root
+      MYSQL_DATABASE: custom_factory
+      MYSQL_USER: cf_user
+      MYSQL_PASSWORD: cf_dev_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pcf_dev_root"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - cf-network
+
+networks:
+  cf-network:
+    driver: bridge

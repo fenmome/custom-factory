@@ -1,0 +1,16 @@
+{
+  "binding_version": "primary-only-v1",
+  "usage_code": "small_business_packaging",
+  "source_pin": {
+    "usage_code": "small_business_packaging",
+    "title_pool_version": "1.3.0",
+    "title_source_hash": "0eed1936275e1e11e90aa7e028e6f106bd949d3583d18f9eebdfb597677ec68f",
+    "approval_overlay_hash": "839c478b1272da9740539a0ece02a726b2bb0c3d90cfa57619d7f99810d8ba85",
+    "query_pool_version": "1.3",
+    "query_source_hash": "ee0b69819d85f51b109bf6dfaeb7021e32e50bd61bbf1ebfc6e002092e1148a0",
+    "query_freeze_hash": "ef1b119d9767e6b22b1ade4e8e5e4eaeee0933b94ba17352933955c8d949213e"
+  },
+  "approved_title_count": 84658,
+  "boundary_title_count": 56739,
+  "approved_query_count": 96
+}

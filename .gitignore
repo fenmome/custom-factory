@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Env
+.env
+.env.local
+
+# 测试运行产生的临时库 / 日志
+*_test.db
+*.log
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# Docker 持久化数据（不入库）
+data/
+data/mysql/
+data/redis/
+data/images/
+data/plans/
+
+# 运行时
+tmp/
+cache/
+logs/
+artifacts/
+
+# IDE / OS
+.DS_Store
+.idea/
+*.swp
+Thumbs.db
+
+# AI 协作工具本地数据
+.codebuddy/

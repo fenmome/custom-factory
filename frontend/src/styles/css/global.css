@@ -1,0 +1,70 @@
+:root {
+  --cf-sider-bg: #1d2233;
+  --cf-content-bg: #f4f6fa;
+  --cf-card-radius: 10px;
+}
+
+.cf-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cf-card {
+  border-radius: var(--cf-card-radius);
+}
+
+.cf-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cf-muted {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.cf-mono {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.cf-image-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.cf-image-card {
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.cf-image-card__thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cf-image-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cf-image-card__body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

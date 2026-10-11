@@ -1,0 +1,40 @@
+{
+  "rule_id": "uv-dtf-small-business-allowed-visual-objects",
+  "version": "1.0",
+  "usage_code": "small_business_packaging",
+  "active_objects": ["GIFT_BOX", "MAILER_BOX", "PACKAGING_BOX", "PRODUCT_BOX"],
+  "hold_objects": [
+    "SHIPPING_BOX",
+    "RETAIL_BOX",
+    "RIGID_BOX",
+    "COATED_BOX",
+    "JEWELRY_PACKAGING",
+    "TIN_CONTAINER"
+  ],
+  "cross_usage_only": [
+    "BOTTLE",
+    "JAR",
+    "CANDLE_JAR",
+    "COSMETIC_CONTAINER",
+    "CUP_TUMBLER"
+  ],
+  "fixed_order": ["GIFT_BOX", "MAILER_BOX", "PACKAGING_BOX", "PRODUCT_BOX"],
+  "fallback_only_when_no_object_facts": true,
+  "surface_gate": ["clean", "dry", "smooth", "hard", "non_porous", "external_surface"],
+  "object_surface_requirements": {
+    "MAILER_BOX": {
+      "finish": ["coated", "laminated"],
+      "forbidden": [
+        "rough corrugated shipping box",
+        "uncoated absorbent cardboard",
+        "rough kraft box"
+      ]
+    }
+  },
+  "rejection_boundary": [
+    "rough kraft / uncoated cardboard / paper / raw wood successful application",
+    "paper bag / shopping bag / gift bag / soft pouch / fabric canvas bag",
+    "loose cards / thank-you cards / envelopes / ribbons as primary object",
+    "two coordinated packaging examples as one canonical object"
+  ]
+}

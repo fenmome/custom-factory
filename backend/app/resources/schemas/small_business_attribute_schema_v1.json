@@ -1,0 +1,20 @@
+{
+  "schema_id": "cf:uv-dtf-small-business-attributes:v1",
+  "version": "1.0",
+  "usage": "small_business_packaging",
+  "product_profile": {
+    "id": "uv_dtf_crystal",
+    "version": "1.0"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["surface_gate"],
+  "properties": {
+    "surface_gate": {
+      "type": "array",
+      "items": { "type": "string" },
+      "const": ["clean", "dry", "smooth", "hard", "non_porous", "external_surface"],
+      "source": "Product Profile.surface_gate"
+    }
+  }
+}

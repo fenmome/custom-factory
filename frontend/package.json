@@ -1,0 +1,42 @@
+{
+  "name": "custom-factory-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "定制商品生产系统前端（Vue3 + TypeScript + Element Plus + Pinia）",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0",
+    "pnpm": ">=9.5.0"
+  },
+  "scripts": {
+    "dev": "vite --mode development",
+    "dev:prod": "vite --mode production",
+    "build": "vite build --mode production",
+    "build:test": "vite build --mode test",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "lint": "eslint . --fix",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.7.7",
+    "dayjs": "^1.11.13",
+    "element-plus": "^2.8.5",
+    "echarts": "^5.5.1",
+    "nprogress": "^0.2.0",
+    "pinia": "^2.2.4",
+    "vue": "^3.5.12",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.6",
+    "@types/nprogress": "^0.2.3",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "sass": "^1.80.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vite-plugin-compression": "^0.5.1",
+    "vue-tsc": "^2.1.10"
+  }
+}

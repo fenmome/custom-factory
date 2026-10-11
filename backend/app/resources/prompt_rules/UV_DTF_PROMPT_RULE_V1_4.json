@@ -1,0 +1,148 @@
+{
+  "rule_id": "uv-dtf-eight-slot-prompt",
+  "version": "1.4",
+  "product_type_code": "UV_DTF",
+  "shared_base": [
+    "Sell Custom UV DTF transfer / decal made from buyer artwork. The resolved object is an application carrier, NOT the item sold or supplied to the buyer.",
+    "Only the resolved primary object is the SKU carrier. Never select or substitute another object. Preserve the single Primary Query meaning; there are no secondary semantic inputs.",
+    "Use the frozen fictional brand spelling, logo motif, palette and style throughout the SKU. The artwork internal identity is never visible text. Natural credible ecommerce photography; do not create a new logo per slot.",
+    "Show thin / low-profile transferred UV ink: a visible thin ink edge, surface-following subtle raised ink edge, subtle micro relief created by the printed UV ink itself, local glossy UV ink edge/highlight and crisp transferred artwork edge. The micro relief comes from the printed UV ink itself, not by transparent resin, not by clear coating, not by a clear backing layer. UV gloss is a specular highlight ON TOP OF the printed UV ink surface, never transparent material around or underneath the ink. The transferred UV ink layer adheres to the carrier but retains visual separation from the substrate. The gaps between separate artwork elements must contain only the original bare substrate; no transparent film, no clear resin, no clear coating connecting the elements. Ink-only artwork, no backing and no white outline. NOT direct-print appearance; show discernible ink-layer edges and local gloss, not an ordinary logo printed into the box. No heavy badge shadow; retain subtle edge depth. Final applied views have no residual carrier film.",
+    "No third-party IP, celebrities, politics, violence, sexual content, unrelated brands, wrong product type, white paper-backed stickers, thick resin domes, hard badges, inflated performance claims or unapproved surface compatibility. No white vinyl patch, paper label, epoxy dome, 3D dome sticker, hard plastic badge, hard emblem, detached plaque, raised enamel pin, thick gel or thick transparent bubble.",
+    "Output the original PNG, square, width = height and both at least 1200 pixels. Larger squares including 1254 x 1254 are valid. No resize, upscale, downscale, crop postprocessing or format conversion. Artwork upload formats are separate from final image format. Render an opaque product image; transparent PNG recommendations apply only to buyer artwork upload.",
+    "Slot01 establishes the canonical artwork reference. Slots02-08 require its verified formal PNG as a runner-supplied binary reference. Use reference ONLY for brand spelling, logo identity, icon silhouette, artwork geometry and color placement. Do NOT copy background, camera, composition, scene, props or carrier presentation from Slot01. Follow the frozen visual plan and each slot role. Never infer identity from previous conversations.",
+    "Visible text is restricted to the explicit per-slot whitelist and the frozen brand name. No slogan or marketing tagline. No Water Resistant, UV Resistant, Scratch Resistant, Durable, Long Lasting, Waterproof, Dishwasher Safe or any other unapproved performance claim. Do not render internal identities, IDs, hashes, paths, debugging labels or additional text. Text restrictions reduce risk; human review remains required.",
+    "The visual plan varies presentation only. Never change the resolved primary object. Slot-specific framing overrides general camera/layout preferences: Slot05 is a macro proof, Slot06 is customization workflow, Slot07 is application steps. Props are secondary and must not introduce another main product or extra legible text.",
+    "EXACT ARTWORK FOOTPRINT: For the completed UV ink application, every raised, glossy, or dimensional visual feature must stay entirely inside the exact printed artwork silhouette. At every outer edge of every artwork element, printed UV ink must transition directly to the visible carrier substrate. ZERO visible transparent material may exist outside the actual printed ink silhouette. Edge structure: OPAQUE / COLORED UV INK -> EXACT INK EDGE -> BARE SUBSTRATE; never INK EDGE -> CLEAR RIM -> SUBSTRATE. Apply this boundary equally to every leaf, flower, shop icon, parcel icon, organic motif, rounded motif, irregular motif, letter and line. Colored UV ink on a leaf ends exactly at the actual colored leaf contour; immediately outside it show the original carrier surface. No clear leaf outline, transparent leaf border, resin skirt, clear halo, clear varnish perimeter or clear adhesive edge. No transparent backing patch, clear carrier-like border, clear gel outline or large transparent margin around letters, leaves or logo shapes. Separate leaves, stems, icons, letters and lines must remain separated by normal bare carrier surface, never connected into one transparent sheet or patch. Preserve existing brand lettering geometry and typography; do not add letter thickness, outlines or white borders. Preserve thin visible UV ink layer, subtle micro relief, local UV gloss, visible thin ink edge and crisp transferred artwork edge within the printed silhouette. Do not reduce the accepted ink micro relief or local gloss; restrict only transparent material outside the artwork contour. Do not flatten the transfer into direct print."
+  ],
+  "forbidden_text": [
+    "Water Resistant",
+    "UV Resistant",
+    "Scratch Resistant",
+    "Durable",
+    "Long Lasting",
+    "Waterproof",
+    "Dishwasher Safe"
+  ],
+  "image_constraints": {
+    "format": "PNG",
+    "square_required": true,
+    "min_width": 1200,
+    "min_height": 1200,
+    "resize_allowed": false,
+    "conversion_allowed": false,
+    "recompression_allowed": false,
+    "transparency_expected": false
+  },
+  "slots": [
+    {
+      "slot": 1,
+      "role": "main_image",
+      "is_required": true,
+      "instruction": "Establish the canonical artwork reference. Hero image: show the resolved primary object bearing the completed UV DTF logo/artwork application. Make the decal result clear without implying the carrier is sold. Only this resolved carrier; no competing main objects. Visible product category is Custom UV DTF Transfer Stickers. Show completed transferred UV ink on the frozen carrier, which is not supplied. Include one natural small visual detail support region proving thin UV ink edge, local gloss and micro relief; no rigid repeated template. Keep the applied result dominant.",
+      "text_whitelist": [
+        "Custom UV DTF Transfer Stickers",
+        "Sticker only - item not included"
+      ],
+      "reference_policy": "NONE"
+    },
+    {
+      "slot": 2,
+      "role": "size_chart",
+      "is_required": true,
+      "instruction": "Size chart for the UV DTF artwork/decal ONLY, not the carrier dimensions. Show exactly: 1.5in ≈ 3.8cm; 2in ≈ 5.1cm; 3in ≈ 7.6cm; 4in ≈ 10.2cm; 5in ≈ 12.7cm. Preserve the same brand and artwork. Do not introduce extra sizes.",
+      "text_whitelist": [
+        "Size Chart",
+        "Size Guide",
+        "1.5in ≈ 3.8cm",
+        "2in ≈ 5.1cm",
+        "3in ≈ 7.6cm",
+        "4in ≈ 10.2cm",
+        "5in ≈ 12.7cm"
+      ],
+      "reference_policy": "REQUIRES_SLOT01"
+    },
+    {
+      "slot": 3,
+      "role": "customization_info",
+      "is_required": true,
+      "instruction": "Customization information: made from buyer-uploaded artwork. Recommend transparent-background PNG; accept JPG / PNG. Avoid blurry screenshots or low-quality artwork. These are BUYER ARTWORK UPLOAD formats; the final product image must remain PNG. Preserve the frozen brand example.",
+      "text_whitelist": [
+        "Upload Artwork",
+        "Transparent PNG recommended",
+        "JPG / PNG accepted",
+        "Avoid blurry screenshots",
+        "Made from your artwork",
+        "Custom UV DTF Transfer Stickers"
+      ],
+      "reference_policy": "REQUIRES_SLOT01"
+    },
+    {
+      "slot": 4,
+      "role": "scene_1",
+      "is_required": false,
+      "instruction": "Application scene: show the same resolved primary object with the same applied artwork in a natural small-business use setting. Vary composition and scene only, never the carrier identity. Commercial photography and natural light; even at a wider view preserve visible transferred UV ink identity rather than ordinary printed-box branding.",
+      "text_whitelist": [],
+      "reference_policy": "REQUIRES_SLOT01"
+    },
+    {
+      "slot": 5,
+      "role": "scene_2",
+      "is_required": false,
+      "instruction": "UV DTF PRODUCT IDENTITY PROOF SLOT: close-up / macro of the same resolved object and artwork. Show visible thin ink edge, subtle surface-following micro relief, local UV gloss, crisp transferred artwork edge, visual separation from substrate and real material texture. No dome bubble and NOT direct-print appearance. Partial carrier/artwork crop is allowed. No complete hero composition, wide scene, promotional poster, hero title block or circular detail inset. Contour proof: show the normal carrier surface right up to every artwork edge and between independent elements; no oversized transparent perimeter or connecting clear patch. Do not reduce the accepted ink micro relief or local gloss.",
+      "text_whitelist": [
+        "Realistic Finish",
+        "Thin UV Ink",
+        "No Dome Effect"
+      ],
+      "reference_policy": "REQUIRES_SLOT01"
+    },
+    {
+      "slot": 6,
+      "role": "scene_3",
+      "is_required": false,
+      "instruction": "Customization workflow in exactly this order: Upload Artwork → UV DTF Transfer → Apply to Smooth Surface. Keep the same artwork throughout; final application carrier is the resolved primary object. This is the order/customization overview, not the four-step application instructions. Use product photography with artwork preview, transfer proof and final application. Transfer film may appear in transfer/process proof; completed result must match the thin visible UV ink identity of Slots01/04/05.",
+      "text_whitelist": [
+        "Upload Artwork",
+        "UV DTF Transfer",
+        "Apply to Smooth Surface",
+        "Custom UV DTF Transfer Stickers"
+      ],
+      "reference_policy": "REQUIRES_SLOT01"
+    },
+    {
+      "slot": 7,
+      "role": "usage_instruction",
+      "is_required": false,
+      "instruction": "Application instructions in exactly this order: Clean → Position → Rub → Peel. Use the resolved object or its same controlled surface throughout. The transfer film is still present during Rub; only afterwards Peel it away. Do not swap objects between panels. Show real hand operation; film remains during Position and Rub and is removed during Peel. Completed result must match the same UV ink identity, not paper-backed sticker or direct print.",
+      "text_whitelist": [
+        "Application Steps",
+        "Clean",
+        "Position",
+        "Rub",
+        "Peel"
+      ],
+      "reference_policy": "REQUIRES_SLOT01"
+    },
+    {
+      "slot": 8,
+      "role": "application_surfaces",
+      "is_required": false,
+      "instruction": "Surface education: distinguish suitable clean, dry, smooth, hard, non-porous external surfaces from unsuitable rough, porous, absorbent, unfinished or soft/fabric surfaces. Material swatches may show multiple surface types for education only; they are not additional SKU hero objects. Unsuitable samples must NOT show a successful complete application. The resolved primary object remains the SKU identity.",
+      "text_whitelist": [
+        "Suitable Surfaces",
+        "Not Suitable",
+        "Smooth",
+        "Hard",
+        "Non-porous",
+        "Coated",
+        "Laminated",
+        "Rough",
+        "Porous",
+        "Absorbent",
+        "Unfinished",
+        "Soft / Fabric"
+      ],
+      "reference_policy": "REQUIRES_SLOT01"
+    }
+  ]
+}

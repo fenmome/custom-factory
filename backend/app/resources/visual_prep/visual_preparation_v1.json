@@ -1,0 +1,115 @@
+{
+  "rule_id": "small-business-visual-preparation",
+  "version": "1.0",
+  "brand": {
+    "batch_policy": "NO_DUPLICATE_HARD",
+    "history_policy": "UNUSED_FIRST_BEST_EFFORT",
+    "exhaustion": "HOLD_BRAND_POOL_EXHAUSTED",
+    "prefixes": [
+      "Aster", "Briar", "Cedar", "Dove", "Ever", "Fern", "Grove", "Hale",
+      "Iris", "Juniper", "Kind", "Luna", "Mira", "Noble", "Opal", "Pearl",
+      "Quinn", "Rose", "Sage", "Vale", "Willow", "Nova", "Clear", "Soft",
+      "True", "North", "Urban", "Golden", "Silver", "Velvet"
+    ],
+    "cores": [
+      "Label", "Parcel", "Bloom", "Mark", "Craft", "Ribbon", "Bottle", "Box",
+      "Petal", "Badge", "Sprig", "Crest", "Leaf", "Loom", "Stone", "Thread",
+      "Line", "Form", "Nest", "Signal", "Vessel", "Favor", "Studio", "Goods",
+      "Works", "House", "Atelier", "Supply", "Co", "Lab"
+    ],
+    "excluded_cores": ["Bottle", "Vessel", "Badge", "Favor"],
+    "suffixes": [
+      "Studio", "Goods", "Co", "House", "Works", "Atelier", "Supply", "Lab",
+      "Collective", "Market", "Foundry", "Workshop", "Company", "Guild"
+    ]
+  },
+  "styles": [
+    { "code": "modern premium", "label": "现代高级" },
+    { "code": "clean marketplace e-commerce", "label": "电商清晰" },
+    { "code": "cute small business", "label": "小商家可爱" },
+    { "code": "minimal Scandinavian", "label": "极简北欧" }
+  ],
+  "deferred_styles": ["black and gold luxury"],
+  "palettes": [
+    {
+      "code": "CREAM",
+      "label": "奶油中性色",
+      "colors": ["cream", "soft ivory", "warm taupe", "dark cocoa accent"]
+    },
+    {
+      "code": "SAGE",
+      "label": "鼠尾草绿",
+      "colors": ["cool white", "sage green", "blush pink", "champagne gold"]
+    },
+    {
+      "code": "TEAL",
+      "label": "青绿色",
+      "colors": ["porcelain white", "teal", "soft jade green", "brushed silver"]
+    },
+    {
+      "code": "MONO",
+      "label": "黑白灰",
+      "colors": ["black", "white", "light gray"]
+    }
+  ],
+  "motifs": [
+    "minimal parcel icon",
+    "simple boutique storefront icon",
+    "small leaf and box icon",
+    "clean ribbon-free package icon",
+    "minimal shop mark icon"
+  ],
+  "hero_layouts": [
+    "left headline/right hero",
+    "top headline/center hero",
+    "diagonal scene",
+    "minimal studio layout"
+  ],
+  "presentation_variants": [
+    {
+      "id": "PV1",
+      "allowed_objects": ["PACKAGING_BOX", "GIFT_BOX", "PRODUCT_BOX", "MAILER_BOX"],
+      "background": "matte white packing table",
+      "camera": "front view",
+      "carrier_finish": "smooth coated cardboard surface",
+      "props": "packing tissue only",
+      "scene": "clean packing table"
+    },
+    {
+      "id": "PV2",
+      "allowed_objects": ["PACKAGING_BOX", "GIFT_BOX", "PRODUCT_BOX"],
+      "background": "light gray studio surface",
+      "camera": "45 degree angle",
+      "carrier_finish": "rigid box satin finish",
+      "props": "small product card blurred",
+      "scene": "boutique shipping station"
+    },
+    {
+      "id": "PV3",
+      "allowed_objects": ["PACKAGING_BOX", "GIFT_BOX", "PRODUCT_BOX"],
+      "background": "smooth coated paper backdrop",
+      "camera": "slight top-down angle",
+      "carrier_finish": "glossy boutique packaging surface",
+      "props": "ruler and clean tape dispenser",
+      "scene": "minimal e-commerce studio"
+    },
+    {
+      "id": "PV4",
+      "allowed_objects": ["MAILER_BOX"],
+      "background": "polished shop counter",
+      "camera": "close-up crop",
+      "carrier_finish": "sealed mailer box surface",
+      "props": "no props",
+      "scene": "polished shop counter"
+    },
+    {
+      "id": "PV5",
+      "allowed_objects": ["PACKAGING_BOX", "GIFT_BOX", "PRODUCT_BOX", "MAILER_BOX"],
+      "background": "warm neutral tabletop",
+      "camera": "wider packaging scene",
+      "carrier_finish": "smooth laminated box surface",
+      "props": "one small plant max",
+      "scene": "light gray product studio"
+    }
+  ]
+}
