@@ -173,10 +173,12 @@ class ImageQAService:
         operation_key: str,
         provider_result: str = "UNCERTAIN",
     ) -> ImageQA:
-        """语义质检 **不得**自动下 FAIL 结论（FR-08.2）。
+        """语义质检（PRD 8.2 / 功能说明书 2.5.2）。
 
-        - UNCERTAIN → PENDING + `REVIEW_REQUIRED_UNCERTAIN`，由人工做最终通过/不通过决定
-        - 提供者明确给出结论时才写 PASS / FAIL
+        - UNCERTAIN → **FAIL（`REVIEW_REQUIRED_UNCERTAIN`）**：不确定按失败标记，
+          强制进入人工复审；人工可在复审中推翻为 PASS（语义失败可推翻，
+          与"硬技术失败不可放行"形成对照）。
+        - PASS / FAIL 仅在提供者明确给出结论时写入。
         """
         rule = load_resource(relative_path=OCR_RULE_PATH)
         if provider_result not in {"PASS", "FAIL", "UNCERTAIN"}:
@@ -184,7 +186,9 @@ class ImageQAService:
 
         if provider_result == "UNCERTAIN":
             finding = QAFinding(
-                RESULT_PENDING, "REVIEW_REQUIRED_UNCERTAIN", "语义待人工裁定，机器不给出失败结论"
+                RESULT_FAIL,
+                "REVIEW_REQUIRED_UNCERTAIN",
+                "语义判定不确定，按失败标记并强制人工复审（人工可推翻）",
             )
         elif provider_result == "PASS":
             finding = QAFinding(RESULT_PASS, None, None)

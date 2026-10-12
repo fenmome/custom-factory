@@ -97,7 +97,25 @@ class RevisionQAService:
         )
         session.add(record)
         session.flush()
+
+        # FR-09：QA 汇总后在同一事务内触发生产保护评估（YELLOW 告警 / RED 按最小范围暂停）
+        _evaluate_guard(session=session, workspace_id=workspace_id, revision_id=revision_id)
         return record
+
+
+def _evaluate_guard(*, session: Session, workspace_id: str, revision_id: str) -> None:
+    from app.models.product import Batch, ProductRevision
+    from app.services import production_guard_service
+
+    product_type_id = None
+    revision = session.get(ProductRevision, revision_id)
+    if revision is not None:
+        batch = session.get(Batch, revision.batch_id)
+        product_type_id = batch.product_type_id if batch is not None else None
+
+    production_guard_service.ProductionGuardService().evaluate_and_apply(
+        session=session, workspace_id=workspace_id, product_type_id=product_type_id
+    )
 
 
 def _latest_asset(*, session: Session, image_job_id: str):

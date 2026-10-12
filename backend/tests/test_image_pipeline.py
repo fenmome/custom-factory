@@ -56,7 +56,7 @@ def revision_with_jobs(session, workspace_id, user_id):
         product_type_code="UV_DTF",
         usage_code="small_business_packaging",
         quantity=1,
-        image_generation_route="API",
+        image_generation_route="CODEX",
         style_code=None,
         palette_code=None,
         request_key=f"req-{new_uuid()}",
@@ -103,8 +103,8 @@ def test_ingest_valid_png_passes_technical(session, revision_with_jobs):
     assert result.asset.integrity_state == "VERIFIED"
     assert result.asset.width == 1254
     assert result.technical_qa.result == "PASS"
-    # 语义质检不得自动给出 FAIL：未知结果一律落到 PENDING，由人工最终裁定
-    assert result.semantic_qa.result == "PENDING"
+    # PRD 8.2：语义不确定按失败标记（REVIEW_REQUIRED_UNCERTAIN），强制人工复审，人工可推翻
+    assert result.semantic_qa.result == "FAIL"
     assert result.semantic_qa.reason_code == "REVIEW_REQUIRED_UNCERTAIN"
 
 

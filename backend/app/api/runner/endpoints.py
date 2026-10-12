@@ -10,7 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_session
-from app.core.exceptions import BatchNotFoundError, ImageJobNotFoundError, ValidationError
+from app.core.events import SYSTEM_EXCEPTION, record_event
+from app.core.exceptions import BatchNotFoundError, ImageJobNotFoundError, ProductionPausedError, ValidationError
 from app.core.response import ok
 from app.deps import RunnerContext, get_runner_context
 from app.models.product import Batch
@@ -67,18 +68,18 @@ async def claim_sku(
     ctx: RunnerContext = Depends(get_runner_context),
     db: Session = Depends(get_session),
 ):
-    pause_check = ProductionGuardService().is_paused(session=db, workspace_id=ctx.workspace_id)
-    if pause_check is not None:
-        return ok({"claimed": False, "paused": True, "reason": pause_check.reason, "pause": ProductionGuardService._pause_brief(pause_check)})
-
-    claimed = sku_generation_claim_service.claim(
-        session=db,
-        workspace_id=ctx.workspace_id,
-        executor_kind="CODEX",
-        executor_id=ctx.executor_id,
-        request_key=request_key,
-        batch_id=batch_id,
-    )
+    try:
+        claimed = sku_generation_claim_service.claim(
+            session=db,
+            workspace_id=ctx.workspace_id,
+            executor_kind="CODEX",
+            executor_id=ctx.executor_id,
+            request_key=request_key,
+            batch_id=batch_id,
+        )
+    except ProductionPausedError as exc:
+        # 暂停（含最小影响范围 / 试运行上限）以可读载荷返回，Runner 据此退避
+        return ok({"claimed": False, "paused": True, "reason": exc.message})
     db.commit()
     if not claimed:
         return ok({"claimed": False, "paused": False})
@@ -167,6 +168,12 @@ async def summarise(
         session=db, workspace_id=ctx.workspace_id, revision_id=revision_id
     )
     db.commit()
+
+    # 试运行期间：修订汇总为 FAIL 即自动上报失败，任一 FAIL → 回退 PAUSED（FR-09）
+    if summary.result == "FAIL":
+        TrialRecorder.record(session=db, workspace_id=ctx.workspace_id, passed=False)
+        db.commit()
+
     return ok(
         {
             "revision_id": revision_id,
@@ -190,10 +197,43 @@ async def mark_ready(
     )
     db.commit()
 
-    # 若处于试运行，上报结果
+    # READY 成功即视为试运行 PASS（失败路径见 /report-fail 与 /summarise）
     TrialRecorder.record(session=db, workspace_id=ctx.workspace_id, passed=True)
     db.commit()
     return ok(result)
+
+
+@router.post("/report-fail", summary="Runner 上报执行失败（试运行期间任一 FAIL → 重新暂停）")
+async def report_fail(
+    reason: str,
+    claim_id: str | None = None,
+    ctx: RunnerContext = Depends(get_runner_context),
+    db: Session = Depends(get_session),
+):
+    if claim_id:
+        sku_generation_claim_service.close(session=db, workspace_id=ctx.workspace_id, claim_id=claim_id)
+    TrialRecorder.record(session=db, workspace_id=ctx.workspace_id, passed=False)
+    db.commit()
+    return ok({"reported": True, "reason": reason})
+
+
+@router.post("/report-exception", summary="Runner 上报非致命系统异常（RED-05：同类连续 ≥3 次 → RED）")
+async def report_exception(
+    reason_code: str,
+    detail: str | None = None,
+    ctx: RunnerContext = Depends(get_runner_context),
+    db: Session = Depends(get_session),
+):
+    record_event(
+        db,
+        workspace_id=ctx.workspace_id,
+        entity_type="PRODUCTION",
+        entity_id=ctx.workspace_id,
+        event_kind=SYSTEM_EXCEPTION,
+        payload={"reason_code": reason_code, "detail": detail, "executor_id": ctx.executor_id},
+    )
+    db.commit()
+    return ok({"reported": True, "reason_code": reason_code})
 
 
 @router.post("/release-claim", summary="释放领取")

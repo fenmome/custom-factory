@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_session
-from app.core.exceptions import NotFoundError
+from app.core.events import GUARD_RESOLVED, record_event, utc_now
+from app.core.exceptions import NotFoundError, ValidationError
 from app.core.response import ok
 from app.deps import CurrentContext, get_current_context, require_operator
 from app.models.guard import ProductionPauseControl
@@ -116,16 +117,32 @@ async def critical_stop(
     return ok(ProductionGuardService._pause_brief(control))
 
 
-@router.delete("/pauses/{control_id}", summary="撤销暂停（仅限非解析状态）")
+@router.delete("/pauses/{control_id}", summary="撤销暂停（需填原因并写入审计；试运行中不可撤销）")
 async def dismiss(
     control_id: str,
+    reason: str = Query(..., min_length=2, description="撤销原因，将写入审计事件"),
     ctx: CurrentContext = Depends(require_operator),
     db: Session = Depends(get_session),
 ):
     control = db.get(ProductionPauseControl, control_id)
     if control is None or control.workspace_id != ctx.workspace_id:
         raise NotFoundError(detail="暂停控制不存在")
+    if control.state == "TRIAL_RUNNING":
+        raise ValidationError(detail="试运行进行中，不允许直接撤销；请等待试运行结果")
+    if control.state == "RESOLVED":
+        raise ValidationError(detail="该暂停已解除")
+
     control.state = "RESOLVED"
+    control.resolved_at = utc_now()
+    control.updated_at = utc_now()
+    record_event(
+        db,
+        workspace_id=ctx.workspace_id,
+        entity_type="PRODUCTION",
+        entity_id=control.id,
+        event_kind=GUARD_RESOLVED,
+        payload={"manual": True, "reason": reason, "operator_id": ctx.user_id, "trigger_rule_id": control.trigger_rule_id},
+    )
     db.commit()
     return ok({"id": control.id, "state": control.state})
 

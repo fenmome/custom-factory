@@ -22,7 +22,7 @@ from app.core.exceptions import HumanReviewRejected, ReviewSnapshotStaleError, V
 from app.core.resource_loader import load_resource
 from app.models.image import ImageAsset, ImageJob, ImageQA
 from app.models.product import ListingConcept, Product, ProductRevision
-from app.services import image_qa_service
+from app.services import image_qa_service, revision_qa_service
 from app.services.uuid_provider import new_uuid
 
 REVIEW_RULE_PATH = "image_policy/uv_dtf_image_policy_v1_2.json"
@@ -209,6 +209,20 @@ class QAReviewService:
             },
         )
         session.flush()
+
+        # 人工裁定后立即重新汇总修订级 QA（同步更新结果并触发 Guard 评估）
+        revision = session.scalar(
+            select(ProductRevision)
+            .where(
+                ProductRevision.workspace_id == command.workspace_id,
+                ProductRevision.product_id == command.product_id,
+            )
+            .order_by(ProductRevision.revision_number.desc())
+        )
+        if revision is not None:
+            revision_qa_service.RevisionQAService().summarise(
+                session=session, workspace_id=command.workspace_id, revision_id=revision.id
+            )
 
         return {
             "product_id": command.product_id,

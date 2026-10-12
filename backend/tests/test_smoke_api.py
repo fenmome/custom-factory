@@ -138,7 +138,7 @@ def test_batch_create_is_idempotent(auth: TestClient):
         "product_type_code": "UV_DTF",
         "usage_code": "small_business_packaging",
         "quantity": 2,
-        "image_generation_route": "API",
+        "image_generation_route": "CODEX",
     }
     first = auth.post("/api/v1/batches", json=payload)
     assert first.json()["code"] == 0, first.json()

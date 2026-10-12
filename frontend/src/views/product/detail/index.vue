@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { Check, DataBoard, Refresh, View } from '@element-plus/icons-vue';
+import { Check, DataBoard, Refresh, Upload, View } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import type { UploadRequestOptions } from 'element-plus';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import ImageThumb from '@/components/custom/image-thumb.vue';
 import QaResultTag from '@/components/custom/qa-result-tag.vue';
+import { uploadImage } from '@/service/api/image';
 import { buildProductData, fetchProductDetail, markReady, summariseQa } from '@/service/api/product';
 import {
   INTEGRITY_DICT,
@@ -98,6 +100,45 @@ function goReview() {
   router.push({ name: 'review_detail', params: { productId: productId.value } });
 }
 
+// ---------------- 槽位图片上传（手动接入与 Runner 同一接收校验） ----------------
+const uploadingSlot = ref<number | null>(null);
+
+async function sha256Hex(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function onUploadSlot(options: UploadRequestOptions, slot: number) {
+  const file = options.file as File;
+  const revisionId = detail.value?.revision_id;
+  if (!revisionId) {
+    ElMessage.error('修订不存在，无法上传');
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith('.png')) {
+    ElMessage.warning('仅接受 PNG 文件（禁止格式转换）');
+    return;
+  }
+
+  uploadingSlot.value = slot;
+  try {
+    const expectedSha256 = await sha256Hex(file);
+    const result = await uploadImage({ revisionId, slot, file, expectedSha256 });
+    if (result.error) {
+      ElMessage.error(`槽位 ${slot} 上传失败：${result.error.msg}`);
+      return;
+    }
+    const technical = (result.data as { technical?: string })?.technical ?? '';
+    ElMessage.success(`槽位 ${slot} 上传成功，技术质检：${technical || '已记录'}`);
+    await load();
+  } finally {
+    uploadingSlot.value = null;
+  }
+}
+
 const gate = computed(() => detail.value?.ready_gate);
 
 onMounted(load);
@@ -158,6 +199,17 @@ onMounted(load);
                   <QaResultTag :result="item.human?.result" :reason-code="item.human?.reason_code" />
                 </div>
                 <div v-if="item.width" class="card-row cf-muted">{{ item.width }} × {{ item.height }}</div>
+                <div class="card-row">
+                  <el-upload
+                    :show-file-list="false"
+                    accept="image/png"
+                    :http-request="(options: UploadRequestOptions) => onUploadSlot(options, item.slot)"
+                  >
+                    <el-button size="small" :icon="Upload" :loading="uploadingSlot === item.slot">
+                      {{ item.asset_id ? '替换图片' : '上传图片' }}
+                    </el-button>
+                  </el-upload>
+                </div>
               </div>
             </div>
           </div>

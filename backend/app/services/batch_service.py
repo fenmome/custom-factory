@@ -62,6 +62,9 @@ def _require_positive_quantity(quantity: int) -> None:
 def _require_supported_route(route: str) -> None:
     if route not in {"API", "CODEX"}:
         raise ValidationError(detail="image_generation_route 仅支持 API / CODEX")
+    if route == "API":
+        # 路线 A（OpenAI 兼容生图 Provider）尚未实现，避免用户创建后无法生产的批次
+        raise ValidationError(detail="路线 A（API 直连生图）尚未实现，请使用 CODEX 路线")
 
 
 def _require_usage(usage_code: str) -> None:
