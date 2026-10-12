@@ -65,7 +65,7 @@ def batch_with_products(session, workspace_id, user_id):
             product_type_code="UV_DTF",
             usage_code="small_business_packaging",
             quantity=2,
-            image_generation_route="API",
+            image_generation_route="CODEX",
             style_code=None,
             palette_code=None,
             request_key=f"req-{new_uuid()}",
@@ -188,13 +188,13 @@ def test_full_path_to_ready_with_human_review(session, workspace_id, batch_with_
         )
     session.flush()
 
-    # 2) 汇总修订级 QA（语义待人工 → 应为 PENDING）
+    # 2) 汇总修订级 QA（语义不确定按 FAIL 标记 → 修订级失败，等待人工推翻）
     summary = revision_qa_service.RevisionQAService().summarise(
         session=session, workspace_id=workspace_id, revision_id=revision.id
     )
     session.flush()
-    assert summary.result == "PENDING"
-    assert summary.pending_count >= 5
+    assert summary.result == "FAIL"
+    assert summary.failed_count >= 5
 
     # 3) 人工复审：语义由人工做最终裁定
     view = QAReviewService().build_review_view(

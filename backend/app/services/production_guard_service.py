@@ -24,9 +24,11 @@ from app.core.events import (
     GUARD_TRIAL_EVALUATED,
     GUARD_TRIAL_STARTED,
     GUARD_YELLOW,
+    SYSTEM_EXCEPTION,
     record_event,
     utc_now,
 )
+from app.models.audit import LifecycleEvent
 from app.core.exceptions import AppError, TrialRunNotAllowedError
 from app.core.resource_loader import Resource, guard_rules
 from app.models.guard import ProductionPauseControl
@@ -84,6 +86,12 @@ class ProductionGuardService:
         return failed, total
 
     def _required_role_streaks(self, *, session: Session, workspace_id: str, limit: int) -> dict[str, int]:
+        """按"连续 N 个 SKU 失败"语义统计必需角色失败连击。
+
+        行按时间倒序（最新在前）；某行中角色为 FAIL 则连击 +1，
+        该行中角色存在但未 FAIL 则连击清零；该行未出现该角色（如不同产品类型
+        角色集不同）则不影响其连击。
+        """
         rows: Sequence[RevisionQA] = session.scalars(
             select(RevisionQA)
             .where(RevisionQA.workspace_id == workspace_id)
@@ -92,29 +100,100 @@ class ProductionGuardService:
         ).all()
 
         streaks: dict[str, int] = {}
+        closed: set[str] = set()
         for row in rows:
             status = row.required_role_status or {}
             for role, info in status.items():
                 if not isinstance(info, dict) or not info.get("is_required"):
                     continue
+                if role in closed:
+                    continue  # 从最新往回遇到非 FAIL 即封口，更早的失败不属于当前连击
                 if info.get("state") == "FAIL":
                     streaks[role] = streaks.get(role, 0) + 1
                 else:
-                    streaks.setdefault(role, streaks[role])
-        return streaks
+                    closed.add(role)
+        return {role: count for role, count in streaks.items() if count > 0}
+
+    def _exception_streak(self, *, session: Session, workspace_id: str, limit: int = 30) -> int:
+        """RED-05：最近连续上报的同类系统异常次数（被其他 PRODUCTION 事件打断即清零）。"""
+        events = session.scalars(
+            select(LifecycleEvent)
+            .where(LifecycleEvent.workspace_id == workspace_id, LifecycleEvent.entity_type == "PRODUCTION")
+            .order_by(LifecycleEvent.occurred_at.desc(), LifecycleEvent.id.desc())
+            .limit(limit)
+        ).all()
+
+        streak = 0
+        reason_code: str | None = None
+        for event in events:
+            if event.event_kind != SYSTEM_EXCEPTION:
+                break
+            code = (event.payload or {}).get("reason_code")
+            if reason_code is not None and code != reason_code:
+                break  # 异常类别变化：不同异常不叠加连击
+            reason_code = code
+            streak += 1
+        return streak
 
     # ---------------- 评估 ----------------
     def evaluate(self, *, session: Session, workspace_id: str, product_type_id: str | None = None) -> GuardEvaluation:
         rules = self.rules.data
         sku_window = int(rules["sku_window"])
+        startup_skus = int(rules["startup_skus"])
         results = self._recent_revision_results(session=session, workspace_id=workspace_id, limit=sku_window)
         total = len(results)
         failed = sum(1 for r in results if r == "FAIL")
 
-        metrics = {"sku_window_total": total, "sku_window_failed": failed}
+        metrics: dict = {"sku_window_total": total, "sku_window_failed": failed}
 
-        # YELLOW-01: 50 SKU 失败率 10%~20%
-        if total >= int(rules["startup_skus"]) or (total > 0 and failed >= int(rules["red_long_failures"])):
+        # 启动观察期（FR-09：前 N 个 SKU：0-1 继续 / 2 黄 / ≥3 红）
+        if total <= startup_skus:
+            metrics["startup_phase"] = True
+            if failed >= int(rules["startup_red_failures"]):
+                return GuardEvaluation(
+                    LEVEL_RED, "STARTUP-RED", f"启动期 {total} 个 SKU 中 {failed} 个失败（阈值 {rules['startup_red_failures']}）", metrics
+                )
+            if failed >= int(rules["startup_yellow_failures"]):
+                return GuardEvaluation(
+                    LEVEL_YELLOW, "STARTUP-YELLOW", f"启动期 {total} 个 SKU 中 {failed} 个失败（阈值 {rules['startup_yellow_failures']}）", metrics
+                )
+
+        # 必需角色连击：先判 RED-04 再判 YELLOW-03
+        streaks = self._required_role_streaks(session=session, workspace_id=workspace_id, limit=sku_window)
+        if streaks:
+            metrics["required_role_streaks"] = streaks
+        r_streak = int(rules["red_required_role_streak"])
+        y_streak = int(rules["yellow_required_role_streak"])
+        for role, count in streaks.items():
+            if count >= r_streak:
+                return GuardEvaluation(LEVEL_RED, "RED-04", f"必需角色 {role} 连续 {count} 个 SKU 失败", metrics)
+        for role, count in streaks.items():
+            if count >= y_streak:
+                return GuardEvaluation(LEVEL_YELLOW, "YELLOW-03", f"必需角色 {role} 连续 {count} 个 SKU 失败", metrics)
+
+        # RED-01: 连续 5 个 SKU 未 READY（从最新往前数，遇 PASS 截断）
+        consecutive = 0
+        for result in results:
+            if result == "PASS":
+                break
+            consecutive += 1
+        metrics["consecutive_not_ready"] = consecutive
+        if consecutive >= int(rules["red_consecutive_skus"]):
+            return GuardEvaluation(LEVEL_RED, "RED-01", f"连续 {consecutive} 个 SKU 未通过 READY", metrics)
+
+        # RED-02: 最近 20 中 ≥6 失败
+        short = min(int(rules["red_short_window"]), total)
+        short_failed = sum(1 for r in results[:short] if r == "FAIL")
+        metrics["short_window_failed"] = short_failed
+        if short >= int(rules["red_short_window"]) and short_failed >= int(rules["red_short_failures"]):
+            return GuardEvaluation(LEVEL_RED, "RED-02", f"最近 {short} 个 SKU 中 {short_failed} 个失败", metrics)
+
+        # RED-03: 50 中 ≥10 失败（窗口未满时不触发）
+        if total >= sku_window and failed >= int(rules["red_long_failures"]):
+            return GuardEvaluation(LEVEL_RED, "RED-03", f"最近 {total} 个 SKU 中 {failed} 个失败", metrics)
+
+        # YELLOW-01: 稳态 50 SKU 失败率 10%~20%（仅统计满窗口，避免小样本误报）
+        if total >= sku_window:
             rate = (failed / total * 100) if total else 0.0
             metrics["sku_fail_rate_percent"] = round(rate, 2)
             if int(rules["sku_yellow_min_percent"]) <= rate < int(rules["sku_yellow_max_percent"]):
@@ -132,38 +211,11 @@ class ProductionGuardService:
             if img_rate >= int(rules["image_yellow_min_percent"]):
                 return GuardEvaluation(LEVEL_YELLOW, "YELLOW-02", f"最近 {img_total} 张图失败率 {img_rate:.1f}%", metrics)
 
-        # YELLOW-03: 必需角色连续 2 个 SKU 失败
-        streaks = self._required_role_streaks(session=session, workspace_id=workspace_id, limit=sku_window)
-        metrics["required_role_streaks"] = streaks
-        y_streak = int(rules["yellow_required_role_streak"])
-        r_streak = int(rules["red_required_role_streak"])
-        for role, count in streaks.items():
-            if count >= r_streak:
-                return GuardEvaluation(LEVEL_RED, "RED-04", f"必需角色 {role} 连续 {count} 个 SKU 失败", metrics)
-        for role, count in streaks.items():
-            if count >= y_streak:
-                return GuardEvaluation(LEVEL_YELLOW, "YELLOW-03", f"必需角色 {role} 连续 {count} 个 SKU 失败", metrics)
-
-        # RED-01: 连续 5 个 SKU 未 READY
-        consecutive = 0
-        for result in results:
-            if result == "PASS":
-                break
-            consecutive += 1
-        metrics["consecutive_not_ready"] = consecutive
-        if consecutive >= int(rules["red_consecutive_skus"]):
-            return GuardEvaluation(LEVEL_RED, "RED-01", f"连续 {consecutive} 个 SKU 未通过 READY", metrics)
-
-        # RED-02: 20 中 ≥6 失败
-        short = min(int(rules["red_short_window"]), total)
-        if short and sum(1 for r in results[:short] if r == "FAIL") >= int(rules["red_short_failures"]):
-            return GuardEvaluation(
-                LEVEL_RED, "RED-02", f"最近 {short} 个 SKU 中 {sum(1 for r in results[:short] if r == 'FAIL')} 个失败", metrics
-            )
-
-        # RED-03: 50 中 ≥10 失败
-        if failed >= int(rules["red_long_failures"]):
-            return GuardEvaluation(LEVEL_RED, "RED-03", f"最近 {total} 个 SKU 中 {failed} 个失败", metrics)
+        # RED-05: 同一非致命系统异常连续 ≥3 次（无上报即恒为 0）
+        exception_streak = self._exception_streak(session=session, workspace_id=workspace_id)
+        metrics["exception_streak"] = exception_streak
+        if exception_streak >= int(rules["red_exception_streak"]):
+            return GuardEvaluation(LEVEL_RED, "RED-05", f"同一系统异常连续上报 {exception_streak} 次", metrics)
 
         return GuardEvaluation(LEVEL_GREEN, None, None, metrics)
 

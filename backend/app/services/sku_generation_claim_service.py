@@ -47,7 +47,13 @@ def claim(
     request_key: str,
     batch_id: str | None = None,
 ) -> dict:
-    """领取下一个可执行的 SKU；返回 plan 或空结果。"""
+    """领取下一个可执行的 SKU；返回 plan 或空结果。
+
+    领取前检查：
+    - SYSTEM 级暂停直接拒绝
+    - 逐候选修订按其产品类型 / 执行器模型检查最小影响范围暂停（FR-09）
+    - 处于 TRIAL_RUNNING 的暂停控制：领取数不得超过 trial_sku_limit
+    """
     guard = production_guard_service.ProductionGuardService()
     paused = guard.is_paused(session=session, workspace_id=workspace_id)
     if paused is not None:
@@ -55,6 +61,8 @@ def claim(
             detail=f"{paused.scope_kind} 已暂停：{paused.reason}",
             code=41401,
         )
+
+    active_pauses = list(guard.active_pauses(session=session, workspace_id=workspace_id))
 
     stmt = _eligible_revision_query(workspace_id=workspace_id, batch_id=batch_id)
     for revision in session.scalars(stmt).all():
@@ -72,6 +80,24 @@ def claim(
         if product is None or batch is None:
             continue
 
+        # 最小影响范围（FR-09）：候选 SKU 所属范围的暂停控制
+        # - PAUSED → 跳过该候选（暂停范围内停止新领取，范围外正常）
+        # - TRIAL_RUNNING → 领取数不得超过 trial_sku_limit，超限跳过
+        scope_control = next(
+            (
+                c
+                for c in active_pauses
+                if c.scope_kind == production_guard_service.SCOPE_PRODUCT_TYPE
+                and c.target.get("product_type_id") == batch.product_type_id
+            ),
+            None,
+        )
+        if scope_control is not None:
+            if scope_control.state == "PAUSED":
+                continue
+            if int(scope_control.trial_claim_count) >= int(scope_control.trial_sku_limit):
+                continue
+
         claim_row = SkuGenerationClaim(
             id=new_uuid(),
             workspace_id=workspace_id,
@@ -86,6 +112,8 @@ def claim(
             created_at=utc_now(),
         )
         session.add(claim_row)
+        if scope_control is not None and scope_control.state == "TRIAL_RUNNING":
+            scope_control.trial_claim_count = int(scope_control.trial_claim_count) + 1
         session.flush()
         return {
             "claim_id": claim_row.id,

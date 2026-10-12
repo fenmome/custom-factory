@@ -13,12 +13,13 @@ from app.deps import CurrentContext, get_current_context, require_reviewer
 from app.models.image import ImageQA, RevisionQA
 from app.models.product import Batch, Product, ProductRevision
 from app.schemas.review import ReviewDecisionIn, ReviewSubmitRequest, ReviewView, SnapshotItemIn
+from app.services.qa_calibration_service import QACalibrationService
 from app.services.qa_review_service import QAReviewService, ReviewDecision, ReviewSnapshotItem
 
 router = APIRouter()
 
 
-@router.get("/pending", summary="待复审队列")
+@router.get("/pending", summary="待复审队列（含校准期强制采样）")
 async def pending_queue(
     batch_id: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
@@ -38,7 +39,40 @@ async def pending_queue(
     if batch_id:
         stmt = stmt.where(ProductRevision.batch_id == batch_id)
 
-    rows = db.execute(stmt).all()
+    rows = list(db.execute(stmt).all())
+    seen_products = {product.id for product, _, _, _ in rows}
+
+    # FR-08 校准期：每个产品类型前 3 个批次中，采样自动通过的 SKU 强制进入人工复审
+    calibration = QACalibrationService()
+    product_type_ids = [
+        row[0]
+        for row in db.execute(
+            select(Batch.product_type_id).where(Batch.workspace_id == ctx.workspace_id).distinct()
+        ).all()
+        if row[0]
+    ]
+    for product_type_id in product_type_ids:
+        for cal_batch in calibration.list_calibration_batches(
+            session=db, workspace_id=ctx.workspace_id, product_type_id=product_type_id
+        ):
+            if batch_id and cal_batch.id != batch_id:
+                continue
+            for product_id in calibration.sample_auto_pass_products(
+                session=db, workspace_id=ctx.workspace_id, batch_id=cal_batch.id
+            ):
+                if product_id in seen_products:
+                    continue
+                seen_products.add(product_id)
+                product = db.get(Product, product_id)
+                revision = db.scalar(
+                    select(ProductRevision)
+                    .where(ProductRevision.product_id == product_id)
+                    .order_by(ProductRevision.revision_number.desc())
+                )
+                if product is None or revision is None:
+                    continue
+                rows.append((product, revision, cal_batch.id, cal_batch.request_key))
+
     total = len(rows)
     window = rows[(page - 1) * page_size : page * page_size]
 
